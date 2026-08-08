@@ -172,6 +172,21 @@ def check_files(cfg: dict, repo: Path, rep: Report) -> None:
             rep.add(FAIL, "files", f"missing required file: {item}")
 
 
+_WIKILINK_RE = re.compile(r"\[\[([^\]|#\n]+)\]\]")
+
+
+def extract_md_link_targets(text: str) -> list[tuple[int, str]]:
+    """(line_number, target) for every markdown link target - no path-shape
+    filter, because in strict scans the doc's links ARE declared claims."""
+    out: list[tuple[int, str]] = []
+    for i, line in enumerate(text.splitlines(), 1):
+        for m in _MD_LINK_RE.finditer(line):
+            tok = m.group(1)
+            if not _SCHEME_RE.match(tok) and not tok.startswith("#"):
+                out.append((i, tok))
+    return out
+
+
 def check_refs(cfg: dict, repo: Path, rep: Report) -> None:
     for item in cfg.get("require", []):
         p = Path(item)
@@ -179,6 +194,38 @@ def check_refs(cfg: dict, repo: Path, rep: Report) -> None:
         rep.add(PASS if ok else FAIL, "refs",
                 f"declared ref {'exists' if ok else 'MISSING'}: {item}")
     ignore = cfg.get("ignore", [])
+    # scan_strict: an index/registry doc whose markdown links are declared
+    # claims - every link target must exist, misses FAIL (not WARN).
+    for doc in glob_repo(repo, cfg.get("scan_strict", [])):
+        text = doc.read_text(encoding="utf-8", errors="replace")
+        rel_doc = norm(str(doc.relative_to(repo)))
+        broken = 0
+        for line_no, tok in extract_md_link_targets(text):
+            if any(fnmatch.fnmatch(tok, pat) or fnmatch.fnmatch(norm(tok), pat)
+                   for pat in ignore):
+                continue
+            if not resolve_ref(tok, repo, doc.parent):
+                rep.add(FAIL, "refs",
+                        f"{rel_doc}:{line_no} index claims missing target: {tok}")
+                broken += 1
+        if not broken:
+            rep.add(PASS, "refs", f"strict-scanned {rel_doc}: all link targets exist")
+    # wikilinks: [[name]] -> name.md next to the doc (or at repo root).
+    # Forward links to not-yet-written notes are legitimate, so misses WARN.
+    for doc in glob_repo(repo, cfg.get("wikilinks", [])):
+        text = doc.read_text(encoding="utf-8", errors="replace")
+        rel_doc = norm(str(doc.relative_to(repo)))
+        broken = 0
+        for i, line in enumerate(text.splitlines(), 1):
+            for m in _WIKILINK_RE.finditer(line):
+                name = m.group(1).strip()
+                if not (doc.parent / f"{name}.md").exists() \
+                        and not (repo / f"{name}.md").exists():
+                    rep.add(WARN, "refs",
+                            f"{rel_doc}:{i} wikilink [[{name}]] has no {name}.md yet")
+                    broken += 1
+        if not broken:
+            rep.add(PASS, "refs", f"wikilinks in {rel_doc} all resolve")
     for doc in glob_repo(repo, cfg.get("scan", [])):
         try:
             text = doc.read_text(encoding="utf-8", errors="replace")

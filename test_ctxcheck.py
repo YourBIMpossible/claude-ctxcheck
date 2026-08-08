@@ -72,6 +72,17 @@ def build_fixture(root: Path) -> Path:
     (repo / "backend").mkdir()
     (repo / "backend" / "app.py").write_text(
         "ROUTES = ['/api/projects', '/api/health']\n", encoding="utf-8")
+    (repo / "memory").mkdir()
+    (repo / "memory" / "good-note.md").write_text(
+        "A note linking [[other-note]] and forward [[future-note]].\n",
+        encoding="utf-8")
+    (repo / "memory" / "other-note.md").write_text("linked target\n", encoding="utf-8")
+    (repo / "memory" / "INDEX.md").write_text(
+        "- [Good](good-note.md) — exists\n"
+        "- [Other](other-note.md) — exists\n"
+        "- [Ghost](deleted-note.md) — index rot\n"
+        "- [Web](https://example.com) — external, skipped\n",
+        encoding="utf-8")
     (repo / "notes").mkdir()
     (repo / "notes" / "old-note.md").write_text("ancient context\n", encoding="utf-8")
     (repo / "notes" / "new-note.md").write_text("fresh context\n", encoding="utf-8")
@@ -179,6 +190,29 @@ max_age_days = 90
                   if "references missing path" in x["message"]),
               "refs: scan misses are WARN not FAIL")
         check(len(warn_msgs) >= 4, "expected WARNs present")
+
+        # --- strict index scan + wikilinks (memory-lint behaviors) ---------
+        mem = write_cfg(tmp / "mem.toml", f"""
+repo = {json.dumps(str(repo))}
+
+[refs]
+scan_strict = ["memory/INDEX.md"]
+wikilinks = ["memory/*.md"]
+""")
+        r = run("run", str(mem), "--json")
+        data = json.loads(r.stdout)
+        mmsgs = {x["message"]: x["status"] for x in data["results"]}
+        check(r.returncode == 1, "index rot makes strict scan exit 1")
+        check(any("deleted-note.md" in m and s == "FAIL" for m, s in mmsgs.items()),
+              "scan_strict: missing index target FAILs")
+        check(not any("https://example.com" in m for m in mmsgs),
+              "scan_strict: external links skipped")
+        check(not any("other-note.md" in m and s != "PASS" for m, s in mmsgs.items()),
+              "scan_strict: existing extensionless-dir link target passes")
+        check(any("[[future-note]]" in m and s == "WARN" for m, s in mmsgs.items()),
+              "wikilinks: forward link WARNs, not FAILs")
+        check(not any("[[other-note]]" in m for m in mmsgs),
+              "wikilinks: resolving link not flagged")
 
         # strict mode: WARNs flip exit to 1
         r = run("run", str(good), "--strict")
