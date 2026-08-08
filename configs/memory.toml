@@ -3,6 +3,8 @@
 # [[wikilinks]] may legitimately point at not-yet-written memories -> WARN.
 # Staleness only WARNs (120d): old memories need review, not deletion.
 # Not a git repo, so staleness falls back to file mtime by design.
+# Do NOT suppress wikilink warnings to make the baseline green: a forward-link
+# warn clears only when the target memory is written or the link is removed.
 repo = "C:/Users/Zeria/.claude/projects/F--AI-Dev/memory"
 
 [files]
