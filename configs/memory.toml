@@ -5,7 +5,7 @@
 # Not a git repo, so staleness falls back to file mtime by design.
 # Do NOT suppress wikilink warnings to make the baseline green: a forward-link
 # warn clears only when the target memory is written or the link is removed.
-repo = "C:/Users/Zeria/.claude/projects/F--AI-Dev/memory"
+repo = "C:/Users/Zeria/.claude/projects/F--BIMpossible/memory"
 
 [files]
 require = ["MEMORY.md"]
