@@ -1,5 +1,5 @@
 # ctxcheck config: claude-profile (SKILL claims, hook paths, ADR links)
-repo = "F:/AI-Dev/claude-profile"
+repo = "F:/Claude-Profile"
 
 [files]
 require = [

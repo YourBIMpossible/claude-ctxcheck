@@ -1,6 +1,6 @@
 # ctxcheck config: BIMpossible (endpoint contracts, compose services, APS config refs)
 # Facts sourced from live recon 2026-08-07. Read-only against the repo.
-repo = "F:/AI-Dev/BIMpossible"
+repo = "F:/BIMpossible"
 
 [files]
 require = [
