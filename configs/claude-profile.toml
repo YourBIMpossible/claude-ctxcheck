@@ -21,8 +21,8 @@ scan = ["skills/ctxdex/SKILL.md", "notes/MAINTENANCE.md", "docs/adr/*.md"]
 # the hook's external dependency + the paths SKILL.md claims
 require = [
   "hooks/ctxdex_autoindex.py",
-  "F:/AI-Dev/.tools/ctxdex/ctxdex.py",
-  "F:/AI-Dev/.tools/ctxdex/test_ctxdex_gate.py",
+  "F:/Claude-Tools/ctxdex/ctxdex.py",
+  "F:/Claude-Tools/ctxdex/test_ctxdex_gate.py",
 ]
 ignore = ["bash://*", "~/*", "*tool-results*", "*.claude/projects*"]
 
@@ -30,11 +30,11 @@ ignore = ["bash://*", "~/*", "*tool-results*", "*.claude/projects*"]
 docs = ["docs/adr/*.md", "skills/ctxdex/SKILL.md", "notes/MAINTENANCE.md"]
 adr_dir = "docs/adr"
 # SKILL.md pins ctxdex-repo commits (402c0e6, dd0173b) - resolve against both repos
-commit_repos = [".", "F:/AI-Dev/.tools/ctxdex"]
+commit_repos = [".", "F:/Claude-Tools/ctxdex"]
 
 [[commands]]
 # the exact invocation SKILL.md documents must still run
-run = "py F:/AI-Dev/.tools/ctxdex/ctxdex.py --help"
+run = "py F:/Claude-Tools/ctxdex/ctxdex.py --help"
 timeout = 30
 
 [[commands]]
